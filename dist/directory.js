@@ -28,6 +28,34 @@
     a.href = url.href;
     return a;
   }
+  function cityPhoto(value) {
+    const image = element('img', '', 'walk-photo');
+    image.alt = '';
+    image.loading = 'lazy';
+    image.decoding = 'async';
+    image.referrerPolicy = 'no-referrer';
+    const sources = [];
+    if (typeof value === 'string' && value.trim()) {
+      try {
+        const url = new URL(value, origin);
+        if (url.protocol === 'https:' && !url.username && !url.password &&
+            !url.pathname.startsWith('/api/og/') && !url.pathname.includes('share-fallback')) {
+          if (url.hostname === 'app-staging.bitcoinwalk.org' && url.pathname.startsWith('/api/media/files/')) {
+            sources.push(origin + url.pathname);
+          }
+          sources.push(url.href);
+        }
+      } catch { /* Use the local walk photo for an invalid feed URL. */ }
+    }
+    sources.push('assets/walk-1.webp');
+    function loadNext() {
+      image.src = sources.shift();
+      if (!sources.length) image.onerror = null;
+    }
+    image.onerror = loadNext;
+    loadNext();
+    return image;
+  }
   function localTime(walk) {
     const options = {weekday:'long', day:'numeric', month:'long', year:'numeric',
       hour:'2-digit', minute:'2-digit', timeZoneName:'short', timeZone:walk.timeZone || 'UTC'};
@@ -50,7 +78,7 @@
     for (const city of cities) {
       const url = publicUrl(city.canonicalUrl);
       if (url && city.name) rows.set(url.pathname.replace(/\/$/, ''), {
-        name:city.name, url, aliases:city.aliases || [], walks:[]
+        name:city.name, photo:city.heroImageUrl, url, aliases:city.aliases || [], walks:[]
       });
     }
     for (const event of events) {
@@ -97,7 +125,7 @@
     for (const city of filtered) {
       if (view === 'list') {
         const card = element('article', '', 'walk-card');
-        card.append(element('h3', city.name));
+        card.append(cityPhoto(city.photo), element('h3', city.name));
         for (const walk of city.walks) card.append(eventDetails(walk));
         if (!city.walks.length) card.append(element('p','No upcoming walk scheduled.'), link('City details', city.url));
         list.append(card);
