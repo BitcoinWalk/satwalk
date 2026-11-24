@@ -126,8 +126,9 @@
       if (view === 'list') {
         const card = element('article', '', 'walk-card');
         card.append(cityPhoto(city.photo), element('h3', city.name));
-        for (const walk of city.walks) card.append(eventDetails(walk));
-        if (!city.walks.length) card.append(element('p','No upcoming walk scheduled.'), link('City details', city.url));
+        const nextWalk = city.walks[0];
+        if (nextWalk) card.append(eventDetails(nextWalk));
+        else card.append(element('p','No upcoming walk scheduled.'), link('City details', city.url));
         list.append(card);
       } else {
         for (const walk of city.walks) {
