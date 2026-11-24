@@ -50,19 +50,3 @@ playback.onclick = () => {
   playback.textContent = pause ? '▶' : 'Ⅱ';
   playback.setAttribute('aria-label', pause ? 'Resume photo rotation' : 'Pause photo rotation');
 };
-const form = document.querySelector('#invite');
-const message = document.querySelector('#message');
-const status = document.querySelector('#status');
-form.onsubmit = event => {
-  event.preventDefault();
-  const place = form.elements.place.value.trim();
-  if (!place) {form.elements.place.value=''; form.reportValidity(); return;}
-  message.value = `Join me for a SatWalk this Saturday at ${form.elements.time.value}. Meet me at ${place} for a walk and a chat about freedom. Bring a neighbour!\n\nhttps://satwalk.org/`;
-  document.querySelector('#result').hidden = false;
-  status.textContent = '';
-  message.focus();
-};
-document.querySelector('#copy').onclick = async () => {
-  try {await navigator.clipboard.writeText(message.value); status.textContent = ' Invitation copied.';}
-  catch {message.focus(); message.select(); status.textContent = ' Invitation selected. Copy it to share.';}
-};
