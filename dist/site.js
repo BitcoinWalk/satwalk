@@ -1,7 +1,47 @@
-const nav = document.querySelector('nav');
-const setNav = () => { nav.dataset.top = window.scrollY < 72; };
-setNav();
-window.addEventListener('scroll', setNav, {passive:true});
+const nav = document.querySelector('.nav');
+const menu = document.querySelector('#site-menu');
+const trigger = nav.querySelector('.menuButton');
+const mobile = matchMedia('(max-width: 1100px)');
+function updateHeader() {
+  const compact = String(window.scrollY >= (mobile.matches ? 68 : 74));
+  nav.dataset.compact = compact;
+  nav.querySelector('.brand').dataset.compact = compact;
+}
+updateHeader();
+window.addEventListener('scroll', updateHeader, {passive:true});
+mobile.onchange = () => { menu.close(); updateHeader(); };
+trigger.onclick = () => {
+  menu.showModal();
+  document.body.style.overflow = 'hidden';
+  trigger.setAttribute('aria-expanded','true');
+};
+menu.onclick = event => { if (event.target.closest('a, .menuClose')) menu.close(); };
+menu.onclose = () => {
+  document.body.style.overflow = '';
+  trigger.setAttribute('aria-expanded','false');
+  if (mobile.matches) trigger.focus({preventScroll:true});
+};
+const preference = matchMedia('(prefers-color-scheme: dark)');
+const toggle = nav.querySelector('#theme');
+let selectedTheme;
+try { selectedTheme = localStorage.getItem('satwalk-theme'); } catch {}
+function applyTheme() {
+  const dark = selectedTheme ? selectedTheme === 'dark' : preference.matches;
+  document.documentElement.dataset.bwTheme = dark ? 'dark' : 'light';
+  for (const logo of document.querySelectorAll('.wordmark')) {
+    logo.src = 'brand/satwalk-horizontal-' + (dark ? 'white' : 'ink') + '.svg';
+  }
+  nav.querySelector('.icon').src = 'brand/satwalk-mark-' + (dark ? 'white' : 'ink') + '.png';
+  toggle.title = 'Switch to ' + (dark ? 'light' : 'dark') + ' theme';
+  toggle.setAttribute('aria-label',toggle.title);
+}
+toggle.onclick = () => {
+  selectedTheme = document.documentElement.dataset.bwTheme === 'dark' ? 'light' : 'dark';
+  try { localStorage.setItem('satwalk-theme',selectedTheme); } catch {}
+  applyTheme();
+};
+preference.onchange = applyTheme;
+applyTheme();
 const playback = document.querySelector('.heroPlayback');
 const photos = document.querySelector('.heroVisual');
 playback.onclick = () => {

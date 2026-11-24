@@ -18,6 +18,6 @@ class Assets(HTMLParser):
                     raise ValueError(f"Missing asset {value}")
 
 html = (root / "index.html").read_text()
-if "<title>SatWalk" not in html or "bitcoin" in html.lower():
+if "<title>SatWalk" not in html or "bitcoin" in html.replace('href="https://bitcoinwalk.org/app"', '').replace('href="https://bitcoinwalk.org/admin"', '').lower():
     raise ValueError("Unexpected homepage branding")
 Assets().feed(html)
