@@ -1,0 +1,51 @@
+name: SatWalk site
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: |
+          python3 deploy/check.py
+          node --check dist/site.js
+          node tests/directory.cjs
+
+
+  publish:
+    needs: check
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: satwalk-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Publish static site
+        env:
+          SSH_TARGET: ${{ secrets.SATWALK_SSH_TARGET }}
+          SSH_KEY: ${{ secrets.SATWALK_DEPLOY_KEY }}
+          HOST_KEYS: ${{ secrets.SATWALK_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          : "${SSH_TARGET:?Configure SATWALK_SSH_TARGET in the production environment}" "${SSH_KEY:?Configure deployment key}"
+          umask 077
+          dir=$(mktemp -d)
+          trap 'rm -rf "$dir"' EXIT
+          printf '%s\n' "$SSH_KEY" > "$dir/key"
+          printf '%s\n' "$HOST_KEYS" > "$dir/known_hosts"
+          tar -C dist -czf - . | ssh -F /dev/null -i "$dir/key" -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$dir/known_hosts" -- "$SSH_TARGET"
+          curl --fail --silent --show-error --retry 4 https://satwalk.org/ -o "$dir/live.html"
+          cmp dist/index.html "$dir/live.html"
